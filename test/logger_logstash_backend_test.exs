@@ -41,7 +41,7 @@ defmodule LoggerLogstashBackendTest do
   test "can log" do
     Logger.info "hello world", [key1: "field1"]
     json = get_log
-    {:ok, data} = JSX.decode json
+    {:ok, data} = Poison.decode json
     assert data["type"] === "some_app"
     assert data["message"] === "hello world"
     expected = %{

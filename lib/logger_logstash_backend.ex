@@ -46,7 +46,7 @@ defmodule LoggerLogstashBackend do
     md = Enum.into(Keyword.merge(md, metadata), %{})
     md = Map.put md, :pid, inspect(md.pid)
     ts = Timex.datetime(ts, :local)
-    {:ok, json} = JSX.encode %{
+    {:ok, json} = Poison.encode %{
       type: type,
       "@timestamp": Timex.format!(ts, "%FT%T%z", :strftime),
       message: to_string(msg),
