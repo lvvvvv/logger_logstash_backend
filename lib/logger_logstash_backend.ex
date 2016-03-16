@@ -17,6 +17,8 @@ defmodule LoggerLogstashBackend do
   use GenEvent
   use Timex
 
+  @default_format "$message"
+
   def init({__MODULE__, name}) do
     {:ok, configure(name, [])}
   end
@@ -36,6 +38,7 @@ defmodule LoggerLogstashBackend do
 
   defp log_event(
     level, msg, ts, md, %{
+      format: format,
       host: host,
       port: port,
       type: type,
@@ -43,8 +46,10 @@ defmodule LoggerLogstashBackend do
       socket: socket
     }
   ) do
+    msg = Logger.Formatter.format(format, level, msg, ts, Dict.take(md, metadata))
     md = Enum.into(Keyword.merge(md, metadata), %{})
     md = Map.put md, :pid, inspect(md.pid)
+    
     ts = Timex.datetime(ts, :local)
     {:ok, json} = Poison.encode %{
       type: type,
@@ -60,6 +65,7 @@ defmodule LoggerLogstashBackend do
     opts = Keyword.merge env, opts
     Application.put_env :logger, name, opts
 
+    format = Keyword.get(opts, :format, @default_format) |> Logger.Formatter.compile
     level = Keyword.get opts, :level, :debug
     metadata = Keyword.get opts, :metadata, []
     type = Keyword.get opts, :type, "elixir"
@@ -67,6 +73,7 @@ defmodule LoggerLogstashBackend do
     port = Keyword.get opts, :port
     {:ok, socket} = :gen_udp.open 0
     %{
+      format: format,
       name: name,
       host: to_char_list(host),
       port: port,
